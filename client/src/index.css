@@ -617,6 +617,10 @@ body {
   animation: fadeInUp 0.2s ease;
 }
 
+.toast--warning {
+  background: var(--clr-warn);
+}
+
 @keyframes fadeInUp {
   from {
     opacity: 0;
