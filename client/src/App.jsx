@@ -35,6 +35,7 @@ export default function App() {
   const [showReport, setShowReport] = useState(false);
   const [reportSent, setReportSent] = useState(false);
   const [connectionError, setConnectionError] = useState(null);
+  const [rateLimitWarning, setRateLimitWarning] = useState(false);
   const locationWatchId = useRef(null);
 
   // ── Socket event listeners ────────────────────────────────────────────────
@@ -107,6 +108,11 @@ export default function App() {
       setTimeout(() => setReportSent(false), 3000);
     }
 
+    function onRateLimitExceeded() {
+      setRateLimitWarning(true);
+      setTimeout(() => setRateLimitWarning(false), 3000);
+    }
+
     socket.on("connect", onConnect);
     socket.on("connect_error", onConnectError);
     socket.on("session_created", onSessionCreated);
@@ -118,6 +124,7 @@ export default function App() {
     socket.on("chat_stopped", onChatStopped);
     socket.on("auto_disconnect", onAutoDisconnect);
     socket.on("report_received", onReportReceived);
+    socket.on("rate_limit_exceeded", onRateLimitExceeded);
 
     return () => {
       socket.off("connect", onConnect);
@@ -131,6 +138,7 @@ export default function App() {
       socket.off("chat_stopped", onChatStopped);
       socket.off("auto_disconnect", onAutoDisconnect);
       socket.off("report_received", onReportReceived);
+      socket.off("rate_limit_exceeded", onRateLimitExceeded);
     };
   }, []);
 
@@ -292,6 +300,10 @@ export default function App() {
 
           {reportSent && (
             <div className="toast">Report sent. Thank you!</div>
+          )}
+
+          {rateLimitWarning && (
+            <div className="toast toast--warning">Slow down! You are sending too quickly.</div>
           )}
         </div>
       )}

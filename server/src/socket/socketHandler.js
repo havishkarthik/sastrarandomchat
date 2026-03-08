@@ -9,6 +9,8 @@ const {
   tryMatch,
   getQueueLength,
 } = require("../matching/matchingAlgorithm");
+const { sanitizeText, sanitizeReason } = require("../utils/sanitize");
+const { createRateLimiter } = require("../utils/rateLimiter");
 
 // Track active chat pairs: Map<socketId, partnerSocketId>
 const activePairs = new Map();
@@ -16,6 +18,12 @@ const activePairs = new Map();
 const userMeta = new Map();
 
 const INACTIVITY_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+
+// Rate limiters — shared across all sockets
+// Messages: max 20 per 10 seconds (prevents spam)
+const messageLimiter = createRateLimiter({ maxEvents: 20, windowMs: 10_000 });
+// Control events (next/stop/find_match): max 10 per 5 seconds
+const controlLimiter = createRateLimiter({ maxEvents: 10, windowMs: 5_000 });
 
 function resetInactivityTimer(io, socketId) {
   const meta = userMeta.get(socketId);
@@ -59,6 +67,11 @@ function registerSocketHandlers(io) {
 
     // ── find_match ───────────────────────────────────────────────────────────
     socket.on("find_match", () => {
+      if (!controlLimiter.check(socket.id)) {
+        socket.emit("rate_limit_exceeded", { event: "find_match" });
+        return;
+      }
+
       // Disconnect from current partner first
       disconnectFromPartner(io, socket.id, "Your partner skipped to the next chat.");
 
@@ -97,8 +110,12 @@ function registerSocketHandlers(io) {
 
     // ── message ──────────────────────────────────────────────────────────────
     socket.on("message", ({ text }) => {
-      if (!text || typeof text !== "string") return;
-      const sanitized = text.trim().slice(0, 1000); // max 1000 chars
+      if (!messageLimiter.check(socket.id)) {
+        socket.emit("rate_limit_exceeded", { event: "message" });
+        return;
+      }
+
+      const sanitized = sanitizeText(text);
       if (!sanitized) return;
 
       const partnerId = activePairs.get(socket.id);
@@ -126,6 +143,11 @@ function registerSocketHandlers(io) {
 
     // ── next ─────────────────────────────────────────────────────────────────
     socket.on("next", () => {
+      if (!controlLimiter.check(socket.id)) {
+        socket.emit("rate_limit_exceeded", { event: "next" });
+        return;
+      }
+
       disconnectFromPartner(io, socket.id, "Your partner has moved to the next chat.");
       removeFromQueue(socket.id);
 
@@ -155,6 +177,11 @@ function registerSocketHandlers(io) {
 
     // ── stop ─────────────────────────────────────────────────────────────────
     socket.on("stop", () => {
+      if (!controlLimiter.check(socket.id)) {
+        socket.emit("rate_limit_exceeded", { event: "stop" });
+        return;
+      }
+
       disconnectFromPartner(io, socket.id, "Your partner has ended the chat.");
       removeFromQueue(socket.id);
       socket.emit("chat_stopped");
@@ -163,8 +190,10 @@ function registerSocketHandlers(io) {
 
     // ── report ───────────────────────────────────────────────────────────────
     socket.on("report", ({ reason }) => {
+      // Sanitize the reason before logging
+      const safeReason = sanitizeReason(reason);
       // Log report server-side only; no data stored
-      console.log(`[REPORT] Socket ${socket.id} reported partner. Reason: ${reason || "N/A"}`);
+      console.log(`[REPORT] Socket ${socket.id} reported partner. Reason: ${safeReason}`);
       socket.emit("report_received");
     });
 
@@ -176,6 +205,10 @@ function registerSocketHandlers(io) {
       const meta = userMeta.get(socket.id);
       if (meta && meta.inactivityTimer) clearTimeout(meta.inactivityTimer);
       userMeta.delete(socket.id);
+
+      // Free rate-limiter memory for this socket
+      messageLimiter.cleanup(socket.id);
+      controlLimiter.cleanup(socket.id);
     });
   });
 }
