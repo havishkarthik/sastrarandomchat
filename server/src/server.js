@@ -11,6 +11,11 @@ const app = express();
 app.use(cors({ origin: CLIENT_ORIGIN }));
 app.use(express.json());
 
+// Root endpoint
+app.get("/", (req, res) => {
+  res.send("Server is running");
+});
+
 // Health check endpoint
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
