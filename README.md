@@ -149,4 +149,6 @@ NODE_ENV=production CLIENT_ORIGIN=https://your-client-domain.com npm run start:s
 
 ## License
 
-MIT
+This project is released into the public domain under [The Unlicense](LICENSE).
+You are free to copy, modify, publish, use, compile, sell, or distribute this
+software for any purpose, without any conditions or restrictions.
