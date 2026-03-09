@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: sastrachat-server
+    runtime: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CLIENT_ORIGIN
+        sync: false   # set this to your Vercel frontend URL after deploying the client
