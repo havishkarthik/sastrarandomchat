@@ -2,6 +2,65 @@
 
 Anonymous Omegle-style random chat application exclusively for Sastra University students.
 
+## 🚀 Deploy & Get Your Shareable Link
+
+Follow these steps once to get a live URL you can send to your friends.
+
+> The app has two parts: a **backend server** (handles real-time chat) and a **frontend website** (what users see). Both must be deployed. Both have a **free** tier.
+
+---
+
+### Step 1 — Deploy the Backend on Render (free)
+
+1. Go to **[render.com](https://render.com)** and sign up / log in with GitHub.
+2. Click **"New +"** → **"Web Service"**.
+3. Connect your **`havishkarthik/sastrarandomchat`** GitHub repository.
+4. Render will detect `render.yaml` automatically. Confirm these settings:
+   - **Root directory**: `server`
+   - **Build command**: `npm install`
+   - **Start command**: `npm start`
+5. Click **"Create Web Service"**.
+6. Wait ~2 minutes. Render gives you a URL like:
+   ```
+   https://sastrachat-server.onrender.com
+   ```
+   **Copy this URL** — you need it in the next step.
+
+---
+
+### Step 2 — Deploy the Frontend on Vercel (free)
+
+1. Go to **[vercel.com](https://vercel.com)** and sign up / log in with GitHub.
+2. Click **"Add New Project"** → import **`havishkarthik/sastrarandomchat`**.
+3. Set the **Root Directory** to **`client`**.
+4. Under **Environment Variables**, add:
+   | Name | Value |
+   |------|-------|
+   | `VITE_SERVER_URL` | `https://sastrachat-server.onrender.com` ← paste your Render URL from Step 1 |
+5. Click **"Deploy"**.
+6. Vercel gives you a URL like:
+   ```
+   https://sastrarandomchat.vercel.app
+   ```
+   🎉 **This is your shareable link!** Send it to your friends.
+
+---
+
+### Step 3 — Allow your frontend on the backend (CORS)
+
+1. Go back to your Render dashboard → your web service → **Environment**.
+2. Set the `CLIENT_ORIGIN` variable to your Vercel URL, e.g.:
+   ```
+   CLIENT_ORIGIN=https://sastrarandomchat.vercel.app
+   ```
+3. Render will restart the server automatically.
+
+---
+
+That's it! Your friends can now open **`https://sastrarandomchat.vercel.app`** (or whatever URL Vercel assigned) and start chatting anonymously. 🎉
+
+---
+
 ## Features
 
 - 🎲 **Random 1-on-1 matching** — instantly paired with another Sastra student
@@ -149,4 +208,6 @@ NODE_ENV=production CLIENT_ORIGIN=https://your-client-domain.com npm run start:s
 
 ## License
 
-MIT
+This project is released into the public domain under [The Unlicense](LICENSE).
+You are free to copy, modify, publish, use, compile, sell, or distribute this
+software for any purpose, without any conditions or restrictions.
